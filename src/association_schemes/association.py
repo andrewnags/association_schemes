@@ -9,19 +9,21 @@ import operator as op
 from typing import (
     List,
     Tuple,
+    Type,
+    TypeVar,
 )
 
-import numpy as np
+import numpy as np  # type: ignore
 
 # Sage
-import sage.all  # noqa: F401
+import sage.all  # type: ignore # noqa: F401
 
-from sage.graphs.graph import Graph
-from sage.matrix.constructor import matrix
-from sage.matrix.special import diagonal_matrix
+from sage.graphs.graph import Graph  # type: ignore
+from sage.matrix.constructor import matrix  # type: ignore
+from sage.matrix.special import diagonal_matrix  # type: ignore
 #from sage.rings.qqbar import QQbar  # noqa: E265
-from sage.rings.real_double import RDF
-from sage.structure.element import Matrix
+from sage.rings.real_double import RDF  # type: ignore
+from sage.structure.element import Matrix  # type: ignore
 
 mult_inv = np.vectorize(ft.partial(op.truediv, 1))
 
@@ -134,38 +136,31 @@ def matrix_of_eigenvalues(
     return idem_mat.solve_right(adjs_mat)
 
 class AssociationScheme(object):
+    Self = TypeVar("Self", bound="AssociationScheme")
+    __classes: List[AssociationClass]
 
-    @staticmethod
-    def from_adjacency(adj_mat) -> "AssociationScheme":
-        assoc_scheme = AssociationScheme()
-        assoc_scheme.root = AssociationMatrix(adj_mat)
+    @classmethod
+    def from_classes(cls: Type[Self], classes: List[AssociationClass]) -> Self:
+        assoc_scheme = cls()
+        assoc_scheme.__classes = list(classes)
+        if len(classes) < 2:
+            raise ValueError(
+                "Need at least two classes to create an association scheme"
+            )
         return assoc_scheme
 
-    @staticmethod
-    def from_graph(graph) -> "AssociationScheme":
-        assoc_scheme = AssociationScheme()
-        assoc_scheme.root = AssociationGraph(graph)
-        return assoc_scheme
+    def classes(self) -> List[AssociationClass]:
+        return self.__classes
+
+    def diameter(self) -> int:
+        return len(self.classes()) - 1
+
+    def len(self) -> int:
+        return len(self.classes()[1].graph())
 
     # TODO
     def validate(self, raise_=True) -> bool:
         return True
-
-    @ft.lru_cache(None)
-    def len(self) -> int:
-        return len(self.root.graph())
-
-    @ft.lru_cache(None)
-    def diameter(self) -> int:
-        return self.root.graph().diameter()
-
-    @ft.lru_cache(None)
-    def classes(self) -> List[AssociationClass]:
-        dist_mat = self.root.graph().distance_matrix().numpy()
-        return [
-            AssociationMatrix(np.array(dist_mat == dist, dtype="uint8"))
-            for dist in range(self.diameter() + 1)
-        ]
 
     def basis(self) -> List[Tuple[int, Matrix]]:
         return list(zip(self.degrees(), self.adjacencies()))
@@ -176,18 +171,13 @@ class AssociationScheme(object):
             for assoc_class in self.classes()
         ]
 
-    @ft.lru_cache(None)
+    # TODO
     def dual_basis(self) -> List[Tuple[int, Matrix]]:
-        decomp = spec_decomp(self.root.adjacency())
-        if len(decomp) != self.diameter() + 1:
-            raise ValueError(
-                "The spectral decomposition does not contain"
-                + " the correct number of eigenspaces."
-            )
-        return [
-            (dim, basis_mat * basis_mat.T)
-            for (_, dim, basis_mat) in decomp
-        ]
+        # If the scheme is *not* P-polynomial
+        # (i.e. derived from a DRG), then the
+        # idempotents can't just be computed from
+        # the "root" class.
+        raise NotImplementedError()
 
     def idempotents(self) -> List[Matrix]:
         return [

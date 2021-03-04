@@ -3,8 +3,8 @@
 check :
 	mypy
 
-.PHONY: fmt
-fmt :
+.PHONY: lint
+lint :
 	flake8
 
 .PHONY: test
