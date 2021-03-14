@@ -7,6 +7,7 @@ import functools as ft
 
 from typing import (
     List,
+    Sequence as Seq,
     Tuple,
     Type,
     TypeVar,
@@ -22,13 +23,21 @@ from sage.structure.element import Matrix  # type: ignore
 # Local
 import association_schemes.association as asch
 
-def make_classes(root: asch.AssociationClass) -> List[asch.AssociationClass]:
+###############################################################################
+#   HELPERS
+###############################################################################
+
+def make_classes(root: asch.AssociationClass) -> Seq[asch.AssociationClass]:
     dist_mat = root.graph().distance_matrix().numpy()
     diameter = dist_mat.max()
     return [
         asch.AssociationMatrix(np.array(dist_mat == dist, dtype="uint8"))
         for dist in range(diameter + 1)
     ]
+
+###############################################################################
+#   ASSOCIATION SCHEMES
+###############################################################################
 
 class PPolynomialScheme(asch.AssociationScheme):
     Self = TypeVar("Self", bound="PPolynomialScheme")
@@ -51,7 +60,7 @@ class PPolynomialScheme(asch.AssociationScheme):
             asch.AssociationGraph(graph)
         )
 
-    def validate(self, raise_=True) -> bool:
+    def validate(self, raise_: bool = True) -> bool:
         valid = self.classes()[1].graph().is_distance_regular()
         if raise_ and not valid:
             raise ValueError(
@@ -61,7 +70,7 @@ class PPolynomialScheme(asch.AssociationScheme):
         return valid
 
     @ft.lru_cache(None)
-    def dual_basis(self) -> List[Tuple[int, Matrix]]:
+    def dual_basis(self) -> Seq[Tuple[int, Matrix]]:
         # We can compute the idempotents more
         # efficiently in the DRG/P-polynomial case.
         decomp = asch.spec_decomp(self.classes()[1].adjacency())

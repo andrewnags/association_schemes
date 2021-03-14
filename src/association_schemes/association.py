@@ -7,7 +7,10 @@ import abc
 import functools as ft
 import operator as op
 from typing import (
+    Dict,
+    Iterable,
     List,
+    Sequence as Seq,
     Tuple,
     Type,
     TypeVar,
@@ -23,7 +26,10 @@ from sage.matrix.constructor import matrix  # type: ignore
 from sage.matrix.special import diagonal_matrix  # type: ignore
 #from sage.rings.qqbar import QQbar  # noqa: E265
 from sage.rings.real_double import RDF  # type: ignore
-from sage.structure.element import Matrix  # type: ignore
+from sage.structure.element import (  # type: ignore
+    CommutativeRingElement,
+    Matrix,
+)
 
 mult_inv = np.vectorize(ft.partial(op.truediv, 1))
 
@@ -31,11 +37,17 @@ mult_inv = np.vectorize(ft.partial(op.truediv, 1))
 #   SPECTRAL DECOMPOSITION
 ###############################################################################
 
-def sort_decomp(decomp):
+
+def sort_decomp(
+    decomp: Iterable[Tuple[CommutativeRingElement, ...]],
+) -> Seq[Tuple[CommutativeRingElement, ...]]:
     return sorted(decomp, key=lambda x: x[0], reverse=True)
 
-def group_eigspaces(vals, vecs):
-    d = dict()
+def group_eigspaces(
+    vals: np.ndarray,
+    vecs: np.ndarray,
+) -> Iterable[Tuple[CommutativeRingElement, int, Matrix]]:
+    d: Dict[CommutativeRingElement, List[int]] = dict()
     for i, val in enumerate(vals):
         d[val] = d.get(val, []) + [i]
     return (
@@ -43,7 +55,10 @@ def group_eigspaces(vals, vecs):
         for val, inds in d.items()
     )
 
-def spec_decomp_fast(A, float_type=None):
+def spec_decomp_fast(
+    A,
+    float_type=None,
+) -> Iterable[Tuple[CommutativeRingElement, int, Matrix]]:
     A = np.array(A, dtype="uint8")
     assert (A == A.T).all()
     vals, vecs = np.linalg.eigh(A)
@@ -52,7 +67,7 @@ def spec_decomp_fast(A, float_type=None):
         vecs = vecs.astype(float_type)
     return group_eigspaces(vals, vecs)
 
-def spec_decomp_exact(A):
+def spec_decomp_exact(A) -> Iterable[Tuple[CommutativeRingElement, int, Matrix]]:
     A = matrix(A)
     return (
         (
@@ -69,6 +84,7 @@ def spec_decomp_exact(A):
         for val, space in A.right_eigenspaces()
     )
 
+# TODO Type this
 def spec_decomp(A, exact=True, float_type=None):
     decomp = None
     if exact:
@@ -121,15 +137,15 @@ class AssociationMatrix(AssociationClass):
 #   ASSOCIATION SCHEMES
 ###############################################################################
 
-def columnize_matrices(mats: List[Matrix]) -> Matrix:
+def columnize_matrices(mats: Seq[Matrix]) -> Matrix:
     return matrix([
         mat.list()
         for mat in mats
     ]).T
 
 def matrix_of_eigenvalues(
-    adjacencies: List[Matrix],
-    idempotents: List[Matrix],
+    adjacencies: Seq[Matrix],
+    idempotents: Seq[Matrix],
 ) -> Matrix:
     adjs_mat = columnize_matrices(adjacencies)
     idem_mat = columnize_matrices(idempotents)
@@ -137,10 +153,11 @@ def matrix_of_eigenvalues(
 
 class AssociationScheme(object):
     Self = TypeVar("Self", bound="AssociationScheme")
-    __classes: List[AssociationClass]
+
+    __classes: Seq[AssociationClass]
 
     @classmethod
-    def from_classes(cls: Type[Self], classes: List[AssociationClass]) -> Self:
+    def from_classes(cls: Type[Self], classes: Seq[AssociationClass]) -> Self:
         assoc_scheme = cls()
         assoc_scheme.__classes = list(classes)
         if len(classes) < 2:
@@ -149,7 +166,7 @@ class AssociationScheme(object):
             )
         return assoc_scheme
 
-    def classes(self) -> List[AssociationClass]:
+    def classes(self) -> Seq[AssociationClass]:
         return self.__classes
 
     def diameter(self) -> int:
@@ -159,27 +176,28 @@ class AssociationScheme(object):
         return len(self.classes()[1].graph())
 
     # TODO
-    def validate(self, raise_=True) -> bool:
+    def validate(self, raise_: bool = True) -> bool:
+        raise NotImplementedError()
         return True
 
-    def basis(self) -> List[Tuple[int, Matrix]]:
+    def basis(self) -> Seq[Tuple[int, Matrix]]:
         return list(zip(self.degrees(), self.adjacencies()))
 
-    def adjacencies(self) -> List[Matrix]:
+    def adjacencies(self) -> Seq[Matrix]:
         return [
             assoc_class.adjacency()
             for assoc_class in self.classes()
         ]
 
     # TODO
-    def dual_basis(self) -> List[Tuple[int, Matrix]]:
+    def dual_basis(self) -> Seq[Tuple[int, Matrix]]:
         # If the scheme is *not* P-polynomial
         # (i.e. derived from a DRG), then the
         # idempotents can't just be computed from
         # the "root" class.
         raise NotImplementedError()
 
-    def idempotents(self) -> List[Matrix]:
+    def idempotents(self) -> Seq[Matrix]:
         return [
             proj_matrix
             for (_, proj_matrix) in self.dual_basis()
@@ -192,10 +210,10 @@ class AssociationScheme(object):
             self.idempotents(),
         )
 
-    def degrees(self) -> List:
+    def degrees(self) -> Seq:
         return self.P()[0, :].list()
 
-    def multiplicities(self) -> List:
+    def multiplicities(self) -> Seq:
         return [
             dim
             for (dim, _) in self.dual_basis()
@@ -203,8 +221,10 @@ class AssociationScheme(object):
 
     @ft.lru_cache(None)
     def Q(self) -> Matrix:
+        deg = self.degrees()
+        mult = self.multiplicities()
         return (
-            diagonal_matrix(mult_inv(self.degrees()))
+            diagonal_matrix(mult_inv(deg))
             * self.P().T
-            * diagonal_matrix(self.multiplicities())
+            * diagonal_matrix(mult)
         )
