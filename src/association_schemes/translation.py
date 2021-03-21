@@ -101,7 +101,7 @@ class CayleyClass(asch.AssociationClass):
         # This will automatically take
         # the closure under inversion.
         return self._group.cayley_graph(
-            generators=self.__part
+            generators=list(self.__part)
         ).to_undirected()
 
 
