@@ -27,12 +27,14 @@ def hamming_generators(n, q):
         partition[len(elt.cycles())].append(elt)
     return group, partition
 
-def bound_hamming(n, q):
+def hamming_scheme(n, q):
+    return trans.TranslationScheme.from_group_partition(
+        *hamming_generators(n, q)
+    )
+
+def bound_scheme_cocliques(scheme):
+    clique = set(range(2, scheme.diameter() + 1))
     try:
-        scheme = trans.TranslationScheme.from_group_partition(
-            *hamming_generators(n, q)
-        )
-        clique = set(range(2, scheme.diameter() + 1))
         return bounds.general_lp_bound(scheme, clique)
     except Exception:
         return "fail"
@@ -45,10 +47,17 @@ experiments = [
 def run_experiments(params):
     for param in params:
         print("translation", param, file=sys.stderr)
+        scheme = hamming_scheme(*param)
         yield (
             "translation",
             "H" + str(param),
-            bound_hamming(*param),
+            bound_scheme_cocliques(scheme),
+        )
+        eigvals = scheme.P().T[1]
+        yield (
+            "trans-ratio",
+            "H" + str(param),
+            scheme.len() / (1 - eigvals[0] / eigvals[-1])
         )
 
 if __name__ == "__main__":
