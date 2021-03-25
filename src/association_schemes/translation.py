@@ -218,6 +218,7 @@ class TranslationScheme(asch.AssociationScheme):
     @ft.lru_cache(None)
     @precompute_character_partition
     def dual_basis(self) -> Seq[Tuple[int, Matrix]]:
+        # FIXME THIS ISN'T TRUE!!
         # Note that the rows of the real parts of the character table
         # provide a real basis for the eigenspace.
         real_characters = self._characters.apply_map(
