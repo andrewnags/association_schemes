@@ -4,6 +4,7 @@
 
 # Python
 import math
+import logging
 import sys
 
 from typing import (
@@ -28,7 +29,9 @@ from association_schemes.p_polynomial import PPolynomialScheme
 ###############################################################################
 
 def general_lp_bound(scheme: AssociationScheme, clique: Set[int]) -> int:
+    logging.info("LP bound for {} in clique {}".format(scheme, clique))
     Q = scheme.Q().numpy()
+    logging.info("Got Q matrix.")
     nonzero_clique = set(clique) - {0}
     # Setting up the dual LP
     objective = Q[0, 1:]
@@ -37,11 +40,13 @@ def general_lp_bound(scheme: AssociationScheme, clique: Set[int]) -> int:
     # Note that in the scipy implementation,
     # one *minimizes* the `objective @ x`
     # subject to `coefficients @ x <= constraints`.
+    logging.info("Starting LP.")
     result = optimize.linprog(
         objective,
         coefficients,
         constraints,
     )
+    logging.info("Done LP.")
     if not result.success:
         # FIXME Change exception type
         raise Exception(result.message)

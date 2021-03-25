@@ -1,5 +1,6 @@
 import functools as ft
 import itertools as it
+import logging
 import operator as op
 import sys
 
@@ -21,6 +22,7 @@ def Zqn(q, n):
 
 # FIXME q != 2 not working
 def hamming_generators(n, q):
+    logging.info("Getting generators for H({}, {})".format(n, q))
     group = Zqn(q, n)
     partition = [[] for _ in range(n + 1)]
     for elt in group.conjugacy_classes_representatives():
@@ -28,11 +30,13 @@ def hamming_generators(n, q):
     return group, partition
 
 def hamming_scheme(n, q):
+    logging.info("Making scheme of H({}, {})".format(n, q))
     return trans.TranslationScheme.from_group_partition(
         *hamming_generators(n, q)
     )
 
 def bound_scheme_cocliques(scheme):
+    logging.info("Getting LP coclique bound.")
     clique = set(range(2, scheme.diameter() + 1))
     try:
         return bounds.general_lp_bound(scheme, clique)
