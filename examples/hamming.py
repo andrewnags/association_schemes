@@ -7,6 +7,9 @@ import sys
 # Sage
 import sage.all
 
+from sage.groups.abelian_gps.abelian_group_gap import (  # type: ignore
+        AbelianGroupGap
+)
 from sage.groups.perm_gps.permgroup import direct_product_permgroups
 from sage.groups.perm_gps.permgroup_named import CyclicPermutationGroup
 
@@ -17,8 +20,7 @@ import association_schemes.translation as trans
 import association_schemes.bounds as bounds
 
 def Zqn(q, n):
-    Zq = CyclicPermutationGroup(q)
-    return direct_product_permgroups([Zq]*n)
+    return AbelianGroupGap([q]*n)
 
 # FIXME q != 2 not working
 def hamming_generators(n, q):
@@ -26,7 +28,7 @@ def hamming_generators(n, q):
     group = Zqn(q, n)
     partition = [[] for _ in range(n + 1)]
     for elt in group.conjugacy_classes_representatives():
-        partition[len(elt.cycles())].append(elt)
+        partition[sum(elt.exponents())].append(elt)
     return group, partition
 
 def hamming_scheme(n, q):

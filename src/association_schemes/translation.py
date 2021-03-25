@@ -22,6 +22,9 @@ from typing import (
 import sage.all  # type: ignore # noqa: F401
 
 from sage.graphs.graph import Graph  # type: ignore
+from sage.groups.abelian_gps.abelian_group_gap import (  # type: ignore
+        AbelianGroupGap
+)
 from sage.groups.group import Group  # type: ignore
 from sage.matrix.constructor import matrix  # type: ignore
 from sage.rings.real_double import RDF  # type: ignore
@@ -45,10 +48,10 @@ Part = Set[MultiplicativeGroupElement]
 class CayleyClass(asch.AssociationClass):
     Self = TypeVar("Self", bound="CayleyClass")
 
-    _group: Group
+    _group: AbelianGroupGap
     __part: Optional[Part]
 
-    def __init__(self, group: Group, part: Part):
+    def __init__(self, group: AbelianGroupGap, part: Part):
         part = set(part)
         if part is None or part == {group.identity()}:
             self.__part = None
@@ -56,7 +59,7 @@ class CayleyClass(asch.AssociationClass):
             self.__part = part
         self._group = group
 
-    def group(self) -> Group:
+    def group(self) -> AbelianGroupGap:
         return self._group
 
     @ft.lru_cache(None)
@@ -153,7 +156,7 @@ def precompute_character_partition(
 class TranslationScheme(asch.AssociationScheme):
     Self = TypeVar("Self", bound="TranslationScheme")
 
-    _group: Group
+    _group: AbelianGroupGap
     # The character table of the group
     _characters: Matrix
     # The matrix of eigenvalues, with some rows duplicated
@@ -168,7 +171,7 @@ class TranslationScheme(asch.AssociationScheme):
     def from_scheme_with_group(
         cls: Type[Self],
         scheme: asch.AssociationScheme,
-        group: Group,
+        group: AbelianGroupGap,
     ) -> Self:
         # TODO Maybe cache some pre-computed values from `scheme`?
         ts = cls()
@@ -183,7 +186,7 @@ class TranslationScheme(asch.AssociationScheme):
     @classmethod
     def from_group_partition(
         cls: Type[Self],
-        group: Group,
+        group: AbelianGroupGap,
         partition: Seq[Part],
     ) -> Self:
         return cls.from_scheme_with_group(
