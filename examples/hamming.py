@@ -28,7 +28,7 @@ def hamming_generators(n, q):
     group = Zqn(q, n)
     partition = [[] for _ in range(n + 1)]
     for elt in group.conjugacy_classes_representatives():
-        partition[sum(elt.exponents())].append(elt)
+        partition[sum(map(bool, elt.exponents()))].append(elt)
     return group, partition
 
 def hamming_scheme(n, q):
