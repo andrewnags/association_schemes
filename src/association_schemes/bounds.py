@@ -45,6 +45,7 @@ def general_lp_bound(scheme: AssociationScheme, clique: Set[int]) -> int:
         objective,
         coefficients,
         constraints,
+        method="simplex",
     )
     logging.info("Done LP.")
     if not result.success:
