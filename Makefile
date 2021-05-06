@@ -1,3 +1,6 @@
+.PHONY: update
+update :
+	pip install -e .
 
 .PHONY: check
 check :
@@ -9,4 +12,4 @@ lint :
 
 .PHONY: test
 test :
-	pytest
+	pytest tests/*.py
